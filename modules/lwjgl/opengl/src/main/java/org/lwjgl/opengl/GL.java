@@ -123,6 +123,7 @@ public final class GL {
         switch (Platform.get()) {
             case FREEBSD:
             case LINUX:
+            case SUNOS:
                 // The following matches the test GLFW does to enable the Wayland backend.
                 if ("wayland".equals(System.getenv("XDG_SESSION_TYPE")) && System.getenv("WAYLAND_DISPLAY") != null) {
                     return true;
@@ -178,6 +179,7 @@ public final class GL {
                     switch (Platform.get()) {
                         case FREEBSD:
                         case LINUX:
+                        case SUNOS:
                             GetProcAddress = library.getFunctionAddress("glXGetProcAddress");
                             if (GetProcAddress == NULL) {
                                 GetProcAddress = library.getFunctionAddress("glXGetProcAddressARB");
@@ -310,7 +312,7 @@ public final class GL {
     /**
      * Returns the GLX capabilities.
      *
-     * <p>This method may only be used on Linux.</p>
+     * <p>This method may only be used on an X11/GLX platform.</p>
      */
     public static GLXCapabilities getCapabilitiesGLX() {
         if (capabilitiesGLX == null) {
@@ -320,12 +322,32 @@ public final class GL {
         return capabilitiesGLX;
     }
 
-    private static GLXCapabilities initCapabilitiesGLX(boolean client) {
-        long display = nXOpenDisplay(NULL);
+        private static long xOpenDisplay() {
+        return Platform.get() == Platform.SUNOS
+            ? org.lwjgl.system.sunos.X11.nXOpenDisplay(NULL)
+            : nXOpenDisplay(NULL);
+    }
+
+    private static int xDefaultScreen(long display) {
+        return Platform.get() == Platform.SUNOS
+            ? org.lwjgl.system.sunos.X11.XDefaultScreen(display)
+            : XDefaultScreen(display);
+    }
+
+    private static void xCloseDisplay(long display) {
+        if (Platform.get() == Platform.SUNOS) {
+            org.lwjgl.system.sunos.X11.XCloseDisplay(display);
+        } else {
+            xCloseDisplay(display);
+        }
+    }
+
+private static GLXCapabilities initCapabilitiesGLX(boolean client) {
+        long display = xOpenDisplay();
         try {
-            return createCapabilitiesGLX(display, client ? -1 : XDefaultScreen(display));
+            return createCapabilitiesGLX(display, client ? -1 : xDefaultScreen(display));
         } finally {
-            XCloseDisplay(display);
+            xCloseDisplay(display);
         }
     }
 
@@ -660,7 +682,7 @@ public final class GL {
     /**
      * Creates a {@link GLXCapabilities} instance for the default screen of the specified X connection.
      *
-     * <p>This method may only be used on Linux.</p>
+     * <p>This method may only be used on an X11/GLX platform.</p>
      *
      * @param display the X connection handle ({@code DISPLAY})
      */
@@ -671,7 +693,7 @@ public final class GL {
     /**
      * Creates a {@link GLXCapabilities} instance for the specified screen of the specified X connection.
      *
-     * <p>This method may only be used on Linux.</p>
+     * <p>This method may only be used on an X11/GLX platform.</p>
      *
      * @param display the X connection handle ({@code DISPLAY})
      * @param screen  the screen index

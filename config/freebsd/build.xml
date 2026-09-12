@@ -5,6 +5,9 @@
 <project name="native-freebsd" basedir="../.." xmlns:if="ant:if" xmlns:unless="ant:unless">
     <import file="../build-definitions.xml"/>
 
+    <condition property="freebsd.cc" value="${env.CC}" else="gcc"><isset property="env.CC"/></condition>
+    <condition property="freebsd.cxx" value="${env.CXX}" else="g++"><isset property="env.CXX"/></condition>
+
     <property name="module.lwjgl.rel" value="../../../../${module.lwjgl}"/>
 
     <macrodef name="compile">
@@ -132,6 +135,10 @@
     </macrodef>
 
     <target name="compile-native-platform">
+        <fail message="FreeBSD/SPARC64 requires LWJGL_FREEBSD_LIBFFI_A to point to a SPARC64 libffi static archive.">
+            <condition><and><isset property="build.arch.sparc64"/><not><isset property="env.LWJGL_FREEBSD_LIBFFI_A"/></not></and></condition>
+        </fail>
+
         <exec executable="sh" logError="true" failonerror="false" taskname="Compiler" if:set="clang.version.print">
             <arg line="-o pipefail -c"/>
             <arg value='clang --version | grep "clang version"'/>
@@ -145,6 +152,7 @@
                 <arg value="-I${src.main.rel}/libffi"/>
                 <arg value="-I${src.main.rel}/libffi/aarch64" if:set="build.arch.arm64"/>
                 <arg value="-I${src.main.rel}/libffi/arm" if:set="build.arch.arm32"/>
+                <arg value="-I${src.main.rel}/libffi/sparc" if:set="build.arch.sparc64"/>
                 <arg value="-I${src.main.rel}/libffi/x86" if:set="build.arch.x64|x86"/>
                 <!-- for libffi/x86/ffitarget.h -->
                 <arg value="-DX86_64" if:set="build.arch.x64"/>
@@ -162,7 +170,8 @@
                 </parallel>
             </beforeLink>
             <link>
-                <fileset dir="${lib.native}/org/lwjgl">
+                                <arg value="${env.LWJGL_FREEBSD_LIBFFI_A}" if:set="build.arch.sparc64"/>
+<fileset dir="${lib.native}/org/lwjgl" unless:set="build.arch.sparc64">
                     <include name="libffi.a"/>
                 </fileset>
                 <arg value="-ldl"/>

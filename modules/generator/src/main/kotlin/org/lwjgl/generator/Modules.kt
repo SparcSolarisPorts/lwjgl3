@@ -43,6 +43,11 @@ enum class Module(
         "org.lwjgl.system.freebsd",
         "Contains bindings to native APIs specific to the FreeBSD operating system."
     ),
+    CORE_SUNOS(
+        "core.sunos",
+        "org.lwjgl.system.sunos",
+        "Contains bindings to the SunOS ABI used by Solaris and illumos."
+    ),
     CORE_LINUX_LIBURING(
         "core.linux.liburing",
         "org.lwjgl.system.linux.liburing",

@@ -523,6 +523,7 @@ public class Configuration<T> {
         switch (Platform.get()) {
             case FREEBSD:
             case LINUX:
+            case SUNOS:
                 return new String[] {"libEGL.so.1"};
             case MACOSX:
                 return new String[] {"EGL"};
@@ -688,6 +689,7 @@ public class Configuration<T> {
         switch (Platform.get()) {
             case FREEBSD:
             case LINUX:
+            case SUNOS:
                 return new String[] {"libGLX.so.0", "libGL.so.1", "libGL.so"};
             case MACOSX:
                 return new String[] {"/System/Library/Frameworks/OpenGL.framework/Versions/Current/OpenGL"};
@@ -705,6 +707,7 @@ public class Configuration<T> {
         switch (Platform.get()) {
             case FREEBSD:
             case LINUX:
+            case SUNOS:
                 return new String[] {"libOSMesa.so.8", "libOSMesa.so.6", "libOSMesa.so"};
             case MACOSX:
                 return new String[] {"libOSMesa.8.dylib"};
@@ -781,6 +784,7 @@ public class Configuration<T> {
         switch (Platform.get()) {
             case FREEBSD:
             case LINUX:
+            case SUNOS:
                 return new String[] {"libGLESv2.so.2"};
             case MACOSX:
                 return new String[] {"GLESv2"};

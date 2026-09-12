@@ -119,6 +119,7 @@ public final class GLES {
                 switch (Platform.get()) {
                     case FREEBSD:
                     case LINUX:
+                    case SUNOS:
                         GetProcAddress = library.getFunctionAddress("glXGetProcAddress");
                         if (GetProcAddress == NULL) {
                             GetProcAddress = library.getFunctionAddress("glXGetProcAddressARB");

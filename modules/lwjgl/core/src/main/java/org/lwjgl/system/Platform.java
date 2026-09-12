@@ -38,6 +38,17 @@ public enum Platform {
             return System.mapLibraryName(name);
         }
     },
+    SUNOS("SunOS", "sunos") {
+        private final Pattern SO = Pattern.compile("(?:^|/)lib\\w+[.]so(?:[.]\\d+)*$");
+
+        @Override
+        String mapLibraryName(String name) {
+            if (SO.matcher(name).find()) {
+                return name;
+            }
+            return System.mapLibraryName(name);
+        }
+    },
     // TODO: Rename to MACOS in LWJGL 4
     MACOSX("macOS", "macos") {
         private final Pattern DYLIB = Pattern.compile("(?:^|/)lib\\w+(?:[.]\\d+)*[.]dylib$");
@@ -69,15 +80,15 @@ public enum Platform {
         ARM64(true),
         ARM32(false),
         PPC64LE(true),
-        RISCV64(true);
-
+        RISCV64(true),
+        SPARC64(true);
         static final Architecture current;
 
         final boolean is64Bit;
 
         static {
             String  osArch  = System.getProperty("os.arch");
-            boolean is64Bit = osArch.contains("64") || osArch.startsWith("armv8");
+            boolean is64Bit = osArch.contains("64") || osArch.startsWith("armv8") || "sparcv9".equals(osArch);
 
             if (osArch.startsWith("arm") || osArch.startsWith("aarch")) {
                 current = is64Bit ? Architecture.ARM64 : Architecture.ARM32;
@@ -91,6 +102,11 @@ public enum Platform {
                     throw new UnsupportedOperationException("Only RISC-V 64 is supported.");
                 }
                 current = Architecture.RISCV64;
+            } else if (osArch.startsWith("sparc")) {
+                if (!is64Bit) {
+                    throw new UnsupportedOperationException("Only SPARC V9/64-bit is supported.");
+                }
+                current = Architecture.SPARC64;
             } else {
                 current = is64Bit ? Architecture.X64 : Architecture.X86;
             }
@@ -138,8 +154,10 @@ public enum Platform {
             current = WINDOWS;
         } else if (osName.startsWith("FreeBSD")) {
             current = FREEBSD;
-        } else if (osName.startsWith("Linux") || osName.startsWith("SunOS") || osName.startsWith("Unix")) {
+        } else if (osName.startsWith("Linux")) {
             current = LINUX;
+        } else if (osName.startsWith("SunOS")) {
+            current = SUNOS;
         } else if (osName.startsWith("Mac OS X") || osName.startsWith("Darwin")) {
             current = MACOSX;
         } else {

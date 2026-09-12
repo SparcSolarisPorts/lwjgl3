@@ -1,0 +1,45 @@
+<!--
+  ~ Copyright LWJGL. All rights reserved.
+  ~ License terms: https://www.lwjgl.org/license
+  -->
+<project name="native-sunos" basedir="../.." xmlns:if="ant:if" xmlns:unless="ant:unless">
+    <import file="../build-definitions.xml"/>
+    <property name="module.lwjgl.rel" value="../../../../${module.lwjgl}"/>
+    <condition property="cc" value="${env.CC}" else="gcc"><isset property="env.CC"/></condition>
+    <macrodef name="compile">
+        <attribute name="dest" default="${dest}"/><attribute name="flags" default=""/><attribute name="simple" default="false"/>
+        <element name="source" implicit="true" optional="true"/>
+        <sequential><mkdir dir="@{dest}"/>
+            <apply dir="@{dest}" executable="${cc}" dest="@{dest}" skipemptyfilesets="true" failonerror="true" parallel="true" taskname="Compiler">
+                <arg line="-c -std=c11"/><arg line="-m64" if:set="build.arch.x64"/><arg line="-m64" if:set="build.arch.sparc64"/>
+                <arg line="-O3 -fPIC @{flags} -pthread -DNDEBUG -D__EXTENSIONS__ -DLWJGL_SUNOS -DLWJGL_${build.arch}"/>
+                <arg value="-I${jni.headers}"/><arg value="-I${jni.headers}/solaris"/><arg value="-I${module.lwjgl.rel}/core/src/main/c"/><arg value="-I${module.lwjgl.rel}/core/src/main/c/${platform}"/><arg value="-I${src.main.rel}" if:true="@{simple}"/>
+                <source/><fileset dir="." includes="${src.generated}/*" if:true="@{simple}"/><regexpmapper from="([\w\-]+)\.(?:c|S)$" to="\1.o"/>
+            </apply>
+        </sequential>
+    </macrodef>
+    <macrodef name="build">
+        <attribute name="module"/><attribute name="suffix" default=""/><attribute name="flags" default=""/><attribute name="simple" default="false"/><element name="source" optional="true"/><element name="link" optional="true"/>
+        <sequential>
+            <local name="src.main"/><local name="src.main.rel"/><local name="src.generated"/>
+            <property name="src.main" location="${module.lwjgl}/@{module}/src/main/c" relative="true"/><property name="src.main.rel" value="${module.lwjgl.rel}/@{module}/src/main/c"/><property name="src.generated" location="${module.lwjgl}/@{module}/src/generated/c" relative="true"/>
+            <local name="name"/><condition property="name" value="lwjgl" else="lwjgl_@{module}@{suffix}"><equals arg1="@{module}" arg2="core"/></condition>
+            <local name="dest"/><property name="dest" value="${bin.native}/@{module}@{suffix}"/><compile flags="@{flags}" simple="@{simple}"><source/></compile>
+            <local name="lib.arch"/><property name="lib.arch" value="${lib.native}/${module.@{module}.path}"/><mkdir dir="${lib.arch}"/><echo message="Linking ${name}" taskname="${cc}"/>
+            <apply executable="${cc}" failonerror="true" parallel="true" taskname="Linker"><srcfile/><arg value="-shared"/><arg line="-m64" if:set="build.arch.x64"/><arg line="-m64" if:set="build.arch.sparc64"/><arg line="-O3 -fPIC -pthread -o ${lib.arch}/lib${name}.so"/><fileset dir="${dest}" includes="*.o"/><link/></apply>
+            <delete file="${lib.native}/touch.txt" quiet="true"/>
+        </sequential>
+    </macrodef>
+    <macrodef name="build_simple"><attribute name="module"/><sequential><build module="@{module}" simple="true" if:true="${binding.@{module}}"/></sequential></macrodef>
+    <target name="compile-native-platform">
+        <fail message="SunOS requires LWJGL_SUNOS_LIBFFI_A to point to a libffi 3.8.0 static archive for the selected architecture." unless="env.LWJGL_SUNOS_LIBFFI_A"/>
+        <parallel threadsPerProcessor="2">
+            <build module="core" flags="-Wall -Wextra"><source>
+                <arg value="-I${src.main.rel}/libffi"/><arg value="-I${src.main.rel}/libffi/aarch64" if:set="build.arch.arm64"/><arg value="-I${src.main.rel}/libffi/sparc" if:set="build.arch.sparc64"/><arg value="-I${src.main.rel}/libffi/x86" if:set="build.arch.x64"/><arg value="-DX86_64" if:set="build.arch.x64"/>
+                <fileset dir="."><include name="${src.main}/*.c"/><include name="${src.generated}/*.c"/><include name="${src.generated}/${platform}/*.c"/></fileset>
+            </source><link><arg value="${env.LWJGL_SUNOS_LIBFFI_A}"/><arg value="-ldl"/></link></build>
+            <build module="opengl"><source><arg value="-I${src.main.rel}"/><fileset dir="." includes="${src.generated}/*" excludes="${src.generated}/org_lwjgl_opengl_WGL.c"/></source></build>
+            <build_simple module="opengles"/>
+        </parallel>
+    </target>
+</project>

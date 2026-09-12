@@ -10,6 +10,9 @@
 #ifdef LWJGL_LINUX
     #include "LinuxConfig.h"
 #endif
+#ifdef LWJGL_SUNOS
+    #include "SunOSConfig.h"
+#endif
 #ifdef LWJGL_MACOS
     #include "macOSConfig.h"
 #endif
@@ -25,7 +28,7 @@ ENABLE_WARNINGS()
 
 // Per-thread data, stored in a platform-specific thread-local.
 // Present in threads that had Callback invocations or OpenGL(ES) contexts made current.
-// Clean up is automatic via DllMain notifications (on Windows) or pthread destructors (on Linux/OSX).
+// Clean up is automatic via DllMain notifications (on Windows) or pthread destructors (on POSIX platforms).
 typedef struct EnvData_ {
     // true if AttachCurrentThreadAsDaemon was used to attach to a foreign thread (on a callback invocation).
     jboolean async;

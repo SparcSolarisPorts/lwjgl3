@@ -9,6 +9,7 @@
     <condition property="linux.triplet" value="aarch64-linux-gnu"><isset property="build.arch.arm64"/></condition>
     <condition property="linux.triplet" value="powerpc64le-linux-gnu"><isset property="build.arch.ppc64le"/></condition>
     <condition property="linux.triplet" value="riscv64-linux-gnu"><isset property="build.arch.riscv64"/></condition>
+    <condition property="linux.triplet" value="sparc64-linux-gnu"><isset property="build.arch.sparc64"/></condition>
     <condition property="linux.triplet" value="x86_64-linux-gnu"><isset property="build.arch.x64|x86"/></condition>
 
     <condition property="gcc.prefix" value="${linux.triplet}-" else="">
@@ -39,6 +40,7 @@
                 <arg line="-c -std=gnu11" unless:set="cpp"/>
                 <arg line="-c -std=gnu++2a" if:set="cpp"/>
                 <arg line="-m64" if:set="build.arch.x64"/>
+                <arg line="-m64" if:set="build.arch.sparc64"/>
                 <arg line="-m32 -mfpmath=sse -msse -msse2" if:set="build.arch.x86"/>
                 <arg line="-mcpu=powerpc64le" if:set="build.arch.ppc64le"/>
                 <arg line="-march=rv64g" if:set="build.arch.riscv64"/>
@@ -130,6 +132,7 @@
                 <srcfile/>
                 <arg value="-shared"/>
                 <arg value="-m64" if:set="build.arch.x64"/>
+                <arg value="-m64" if:set="build.arch.sparc64"/>
                 <arg value="-m32" if:set="build.arch.x86"/>
 
                 <arg line="-z noexecstack"/>
@@ -158,6 +161,10 @@
     </macrodef>
 
     <target name="compile-native-platform">
+        <fail message="Linux/SPARC64 requires LWJGL_LINUX_LIBFFI_A to point to a SPARC64 libffi static archive.">
+            <condition><and><isset property="build.arch.sparc64"/><not><isset property="env.LWJGL_LINUX_LIBFFI_A"/></not></and></condition>
+        </fail>
+
         <sequential if:set="gcc.version.print">
             <echo message="GCC executable: ${gcc.prefix}gcc${gcc.suffix}"/>
             <exec executable="bash" logError="true" failonerror="false" taskname="Compiler">
@@ -184,6 +191,7 @@
                 <arg value="-I${src.main.rel}/libffi/arm" if:set="build.arch.arm32"/>
                 <arg value="-I${src.main.rel}/libffi/ppc64le" if:set="build.arch.ppc64le"/>
                 <arg value="-I${src.main.rel}/libffi/riscv64" if:set="build.arch.riscv64"/>
+                <arg value="-I${src.main.rel}/libffi/sparc" if:set="build.arch.sparc64"/>
                 <arg value="-I${src.main.rel}/libffi/x86" if:set="build.arch.x64|x86"/>
                 <arg value="-DX86_64" if:set="build.arch.x64"/> <!-- for libffi/x86/ffitarget.h -->
                 <arg value="-DPOWERPC" if:set="build.arch.ppc64le"/> <!-- for libffi/ppc64le/ffitarget.h -->
@@ -202,7 +210,8 @@
                 </parallel>
             </beforeLink>
             <link>
-                <fileset dir="${lib.native}/org/lwjgl">
+                                <arg value="${env.LWJGL_LINUX_LIBFFI_A}" if:set="build.arch.sparc64"/>
+<fileset dir="${lib.native}/org/lwjgl" unless:set="build.arch.sparc64">
                     <include name="libffi.a"/>
                 </fileset>
                 <arg value="-ldl"/>
